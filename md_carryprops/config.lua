@@ -228,34 +228,83 @@ Config.Animations = {
 }
 
 -- =============================================================================
--- ATTACH-OFFSETS
--- Bones: 28422 = IK_R_Hand, 60309 = PH_R_Hand, 24818 = SKEL_Spine3
+-- TRAGE-PROFILE (Animation + Attach pro Prop-Typ)
+-- Bone-IDs: 24818 = Brust (box_carry), 28422 = rechte Hand (einhändig)
 -- =============================================================================
 
+Config.CarryProfiles = {
+    -- Zwei Hände vor dem Körper – für Kisten/Kartons (anim@heists@box_carry@)
+    box_front = {
+        anim = { dict = 'anim@heists@box_carry@', anim = 'idle', flag = 49 },
+        attach = { bone = 24818, x = 0.0, y = 0.45, z = 0.0, rx = 0.0, ry = 0.0, rz = 180.0 },
+        autoScale = true,
+        refDepth = 0.40,
+    },
+
+    -- Ein Handgriff seitlich – Kegel, Leuchte (anim@move_m@trash)
+    one_hand = {
+        anim = { dict = 'anim@move_m@trash', anim = 'idle', flag = 49 },
+        attach = { bone = 28422, x = 0.14, y = 0.02, z = -0.04, rx = -95.0, ry = 0.0, rz = 90.0 },
+        autoScale = false,
+    },
+
+    -- Horizontale Absperrung vor dem Körper
+    barrier = {
+        anim = { dict = 'anim@heists@box_carry@', anim = 'idle', flag = 49 },
+        attach = { bone = 24818, x = 0.0, y = 0.52, z = -0.38, rx = 0.0, ry = 0.0, rz = 90.0 },
+        autoScale = false,
+    },
+
+    -- Hohes Schild / Tafel senkrecht
+    sign_tall = {
+        anim = { dict = 'anim@heists@box_carry@', anim = 'idle', flag = 49 },
+        attach = { bone = 24818, x = 0.0, y = 0.32, z = -0.52, rx = 0.0, ry = 0.0, rz = 180.0 },
+        autoScale = false,
+    },
+}
+
+-- Standard-Profil pro Kategorie
+Config.CategoryCarryProfile = {
+    box = 'box_front',
+    construction = 'one_hand',
+    trash = 'box_front',
+    cart = 'box_front',
+}
+
+-- Exakte Einstellung pro Prop-Model (getestet für box_carry / trash idle)
+Config.ModelCarrySetup = {
+    -- Holzkisten
+    ['prop_box_wood02a'] = { profile = 'box_front', y = 0.50, z = -0.12 },
+    ['prop_box_wood04a'] = { profile = 'box_front', y = 0.48, z = -0.10 },
+    ['prop_box_wood05a'] = { profile = 'box_front', y = 0.46, z = -0.08 },
+    ['prop_box_wood07a'] = { profile = 'box_front', y = 0.47, z = -0.10 },
+
+    -- Kisten / Kartons
+    ['prop_crate_01a']  = { profile = 'box_front', y = 0.52, z = -0.14 },
+    ['prop_crate_08a']  = { profile = 'box_front', y = 0.48, z = -0.11 },
+    ['prop_cs_cardbox_01'] = { profile = 'box_front', y = 0.38, z = -0.06 },
+    ['prop_cs_cardbox_02'] = { profile = 'box_front', y = 0.38, z = -0.06 },
+
+    -- Baustelle
+    ['prop_roadcone02a'] = { profile = 'one_hand', x = 0.16, y = 0.03, z = -0.02, rx = -100.0, rz = 90.0 },
+    ['prop_roadcone02b'] = { profile = 'one_hand', x = 0.16, y = 0.03, z = -0.02, rx = -100.0, rz = 90.0 },
+    ['prop_barrier_work05']  = { profile = 'barrier', y = 0.54, z = -0.36 },
+    ['prop_barrier_work06a'] = { profile = 'barrier', y = 0.52, z = -0.34 },
+    ['prop_sign_road_01a'] = { profile = 'sign_tall', y = 0.30, z = -0.50 },
+    ['prop_sign_road_02a'] = { profile = 'sign_tall', y = 0.30, z = -0.48 },
+    ['prop_worklight_03a'] = { profile = 'one_hand', x = 0.11, y = -0.03, z = -0.07, rx = -82.0, rz = 95.0 },
+}
+
+-- Legacy-Fallback (wird von Utils.GetCarrySetup ersetzt)
 Config.AttachOffsets = {
-    default = { bone = 28422, x = 0.0, y = -0.12, z = 0.02, rx = 0.0, ry = 0.0, rz = 0.0 },
-
-    -- Kisten: vor dem Körper, passend zur box_carry-Animation
-    box = { bone = 60309, x = 0.025, y = 0.08, z = 0.255, rx = -145.0, ry = 290.0, rz = 0.0 },
-
-    -- Baustelle: einhändig seitlich (Kegel, Schilder)
-    construction = { bone = 28422, x = 0.08, y = -0.05, z = 0.02, rx = -80.0, ry = 10.0, rz = 90.0 },
-
-    -- Falls doch getragen wird
-    trash = { bone = 24818, x = 0.0, y = 0.28, z = -0.05, rx = 0.0, ry = 0.0, rz = 0.0 },
-    cart = { bone = 24818, x = 0.0, y = 0.28, z = -0.05, rx = 0.0, ry = 0.0, rz = 0.0 },
+    default = { bone = 24818, x = 0.0, y = 0.45, z = 0.0, rx = 0.0, ry = 0.0, rz = 180.0 },
+    box = { bone = 24818, x = 0.0, y = 0.45, z = 0.0, rx = 0.0, ry = 0.0, rz = 180.0 },
+    construction = { bone = 28422, x = 0.14, y = 0.02, z = -0.04, rx = -95.0, ry = 0.0, rz = 90.0 },
+    trash = { bone = 24818, x = 0.0, y = 0.45, z = 0.0, rx = 0.0, ry = 0.0, rz = 180.0 },
+    cart = { bone = 24818, x = 0.0, y = 0.45, z = 0.0, rx = 0.0, ry = 0.0, rz = 180.0 },
 }
 
--- Feinabstimmung pro Model (optional)
-Config.ModelAttachOverrides = {
-    ['prop_cs_cardbox_01'] = { bone = 60309, x = 0.025, y = 0.08, z = 0.20, rx = -145.0, ry = 290.0, rz = 0.0 },
-    ['prop_cs_cardbox_02'] = { bone = 60309, x = 0.025, y = 0.08, z = 0.20, rx = -145.0, ry = 290.0, rz = 0.0 },
-    ['prop_roadcone02a'] = { bone = 28422, x = 0.10, y = -0.02, z = 0.0, rx = -90.0, ry = 0.0, rz = 90.0 },
-    ['prop_roadcone02b'] = { bone = 28422, x = 0.10, y = -0.02, z = 0.0, rx = -90.0, ry = 0.0, rz = 90.0 },
-    ['prop_barrier_work05'] = { bone = 24818, x = 0.0, y = 0.35, z = 0.0, rx = 0.0, ry = 0.0, rz = 90.0 },
-    ['prop_sign_road_01a'] = { bone = 28422, x = 0.12, y = 0.0, z = 0.0, rx = 0.0, ry = 0.0, rz = 90.0 },
-    ['prop_worklight_03a'] = { bone = 28422, x = 0.05, y = -0.08, z = 0.0, rx = -70.0, ry = 0.0, rz = 90.0 },
-}
+Config.ModelAttachOverrides = {}
 
 -- Schiebe-Offset vor dem Spieler (relativ zum Ped)
 Config.PushOffset = { x = 0.0, y = 1.15, z = -0.95 }

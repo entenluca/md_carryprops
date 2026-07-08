@@ -114,13 +114,81 @@ function Utils.GetModeForCategory(categoryId)
     return 'carry'
 end
 
---- Attach-Offset für Kategorie / Model
-function Utils.GetAttachOffset(categoryId, modelHash)
-    if modelHash and Config.ModelAttachOverrides then
-        for modelName, offset in pairs(Config.ModelAttachOverrides) do
-            if Utils.GetModelHash(modelName) == modelHash then
-                return offset
+--- Model-Name aus Hash über Config-Listen
+function Utils.GetModelNameFromHash(modelHash)
+    for _, entry in ipairs(Config.AllowedProps or {}) do
+        if Utils.GetModelHash(entry) == modelHash then
+            return type(entry) == 'string' and entry or nil
+        end
+    end
+
+    for _, entry in ipairs(Config.MenuProps or {}) do
+        if entry.model and Utils.GetModelHash(entry.model) == modelHash then
+            return entry.model
+        end
+    end
+
+    return nil
+end
+
+--- Trage-Setup: Animation + Attach passend zum Prop
+function Utils.GetCarrySetup(entity, category)
+    local hash = type(entity) == 'number' and entity or GetEntityModel(entity)
+    local modelName = Utils.GetModelNameFromHash(hash)
+    local modelSetup = modelName and Config.ModelCarrySetup and Config.ModelCarrySetup[modelName] or nil
+
+    local profileName = (modelSetup and modelSetup.profile)
+        or (Config.CategoryCarryProfile and Config.CategoryCarryProfile[category])
+        or 'box_front'
+
+    local profile = Config.CarryProfiles and Config.CarryProfiles[profileName]
+        or Config.CarryProfiles.box_front
+
+    local base = profile.attach
+    local attach = {
+        bone = base.bone,
+        x = base.x,
+        y = base.y,
+        z = base.z,
+        rx = base.rx,
+        ry = base.ry,
+        rz = base.rz,
+    }
+
+    -- Model-spezifische Overrides anwenden
+    if modelSetup then
+        for _, key in ipairs({ 'bone', 'x', 'y', 'z', 'rx', 'ry', 'rz' }) do
+            if modelSetup[key] ~= nil then
+                attach[key] = modelSetup[key]
             end
+        end
+    end
+
+    -- Kisten: Y/Z an Modellgröße anpassen (Pivot ist meist am Boden)
+    if profile.autoScale and hash and hash ~= 0 then
+        local minDim, maxDim = GetModelDimensions(hash)
+        if minDim and maxDim then
+            local depth = math.max(0.15, maxDim.y - minDim.y)
+            local refDepth = profile.refDepth or modelSetup and modelSetup.refDepth or 0.40
+            attach.y = attach.y * (depth / refDepth)
+            attach.z = attach.z + (minDim.z * 0.35)
+        end
+    end
+
+    return {
+        anim = profile.anim,
+        attach = attach,
+        profile = profileName,
+    }
+end
+
+--- Attach-Offset für Kategorie / Model (Legacy-Fallback)
+function Utils.GetAttachOffset(categoryId, modelHash)
+    if modelHash and Config.ModelCarrySetup then
+        local modelName = Utils.GetModelNameFromHash(modelHash)
+        if modelName and Config.ModelCarrySetup[modelName] then
+            local setup = Utils.GetCarrySetup(modelHash, categoryId)
+            return setup.attach
         end
     end
 

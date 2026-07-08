@@ -5,6 +5,7 @@ Carry = {
     mode = nil,
     animDict = nil,
     animName = nil,
+    animFlag = 49,
 }
 
 function Carry.IsActive()
@@ -15,22 +16,16 @@ function Carry.GetEntity()
     return Carry.entity
 end
 
-local function GetCarryAnimation(category)
-    if category == 'construction' then
-        return Config.Animations.carryOneHand or Config.Animations.carry
-    end
-    return Config.Animations.carry
-end
-
 function Carry.ApplyAttach(entity, ped, category)
     if not DoesEntityExist(entity) or not DoesEntityExist(ped) then
         return
     end
 
-    local model = GetEntityModel(entity)
-    local offset = Utils.GetAttachOffset(category, model)
+    local setup = Utils.GetCarrySetup(entity, category)
+    local offset = setup.attach
 
     DetachEntity(entity, true, true)
+    SetEntityRotation(entity, 0.0, 0.0, 0.0, 2, true)
 
     AttachEntityToEntity(
         entity, ped, GetPedBoneIndex(ped, offset.bone),
@@ -38,6 +33,8 @@ function Carry.ApplyAttach(entity, ped, category)
         offset.rx, offset.ry, offset.rz,
         true, true, false, true, 1, true
     )
+
+    Utils.Debug('Attach:', setup.profile, offset.bone, offset.y, offset.z)
 end
 
 function Carry.Start(entity, category, mode)
@@ -75,7 +72,8 @@ function Carry.Start(entity, category, mode)
         return false
     end
 
-    local anim = GetCarryAnimation(category)
+    local setup = Utils.GetCarrySetup(entity, category)
+    local anim = setup.anim
 
     DetachEntity(entity, true, true)
     FreezeEntityPosition(entity, true)
@@ -83,8 +81,13 @@ function Carry.Start(entity, category, mode)
 
     Utils.PlayAnim(ped, anim.dict, anim.anim, anim.flag)
 
-    -- Kurz warten bis Animation läuft, dann sauber attachieren
-    Wait(100)
+    -- Warten bis Animation läuft, dann mit passendem Profil attachieren
+    local timeout = GetGameTimer() + 800
+    while not IsEntityPlayingAnim(ped, anim.dict, anim.anim, 3) and GetGameTimer() < timeout do
+        Wait(10)
+    end
+    Wait(50)
+
     Carry.ApplyAttach(entity, ped, category)
 
     Carry.active = true
@@ -93,8 +96,9 @@ function Carry.Start(entity, category, mode)
     Carry.mode = mode
     Carry.animDict = anim.dict
     Carry.animName = anim.anim
+    Carry.animFlag = anim.flag
 
-    Utils.Debug('Carry gestartet:', category)
+    Utils.Debug('Carry gestartet:', category, setup.profile)
     return true
 end
 
@@ -128,6 +132,7 @@ function Carry.Stop(placeOnGround)
     Carry.mode = nil
     Carry.animDict = nil
     Carry.animName = nil
+    Carry.animFlag = 49
 end
 
 function Carry.Drop()
@@ -154,11 +159,11 @@ function Carry.Drop()
     Carry.mode = nil
     Carry.animDict = nil
     Carry.animName = nil
+    Carry.animFlag = 49
 
     Notify.LocaleType('dropped', 'success')
 end
 
---- Prop aus Menü direkt in die Hand spawnen
 function Carry.SpawnAndHold(modelName, category)
     local ped = PlayerPedId()
     local canInteract, reason = Utils.CanPlayerInteract(ped)
@@ -204,7 +209,6 @@ function Carry.SpawnAndHold(modelName, category)
     Notify.LocaleType('prop_spawned', 'success')
 end
 
---- Animations-Thread (nur wenn aktiv)
 CreateThread(function()
     while true do
         if Carry.IsActive() then
@@ -212,12 +216,12 @@ CreateThread(function()
             local entity = Carry.entity
 
             if not IsEntityPlayingAnim(ped, Carry.animDict, Carry.animName, 3) then
-                Utils.PlayAnim(ped, Carry.animDict, Carry.animName, Config.Animations.carry.flag)
-                Wait(50)
+                Utils.PlayAnim(ped, Carry.animDict, Carry.animName, Carry.animFlag)
+                Wait(80)
                 Carry.ApplyAttach(entity, ped, Carry.category)
             end
 
-            Wait(500)
+            Wait(400)
         else
             Wait(1000)
         end
