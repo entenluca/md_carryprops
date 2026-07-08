@@ -1,7 +1,5 @@
-Target = {
-    system = nil,
-    registered = false,
-}
+Target.system = Target.system or nil
+Target.registered = Target.registered or false
 
 local TARGET_OPTION = 'md_carryprops_pickup'
 
@@ -113,7 +111,7 @@ function Target.IsEnabled()
 end
 
 function Target.IsActive()
-    return Target.registered and Target.system ~= nil
+    return Target.registered == true and Target.system ~= nil
 end
 
 function Target.Init()

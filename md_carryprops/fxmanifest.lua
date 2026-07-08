@@ -21,8 +21,8 @@ client_scripts {
     'client/placement.lua',
     'client/interact.lua',
     'client/target.lua',
-    'client/menu.lua',
     'client/main.lua',
+    'client/menu.lua',
 }
 
 server_scripts {

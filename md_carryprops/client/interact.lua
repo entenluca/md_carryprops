@@ -1,5 +1,20 @@
 Interact = {}
 
+-- Target-Stub: muss vor main.lua verfügbar sein (auch wenn target.lua fehlt oder später lädt)
+Target = Target or {
+    system = nil,
+    registered = false,
+}
+
+function Target.IsEnabled()
+    local mode = Config.Interaction and Config.Interaction.mode or 'target'
+    return mode == 'target' or mode == 'both'
+end
+
+function Target.IsActive()
+    return Target.registered == true and Target.system ~= nil
+end
+
 --- Zentrale Aufnahme-Logik (Raycast, ox_target, qb-target)
 function Interact.Pickup(entity)
     if Carry.IsActive() or Push.IsActive() or Placement.IsActive() then

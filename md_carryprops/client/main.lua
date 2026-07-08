@@ -20,7 +20,7 @@ local function UsesRaycastInteraction()
     end
 
     -- target-Modus: Raycast nur als Fallback wenn kein Target-System läuft
-    if mode == 'target' and not Target.IsActive() then
+    if mode == 'target' and not (Target and Target.IsActive and Target.IsActive()) then
         return true
     end
 
