@@ -1,4 +1,7 @@
-Validation = {}
+Validation = Validation or {}
+
+local lastNotifyAt = 0
+local NOTIFY_COOLDOWN = 1500
 
 local function GetCfg(key, fallback)
     if Config.Restrictions and Config.Restrictions[key] ~= nil then
@@ -7,10 +10,23 @@ local function GetCfg(key, fallback)
     return fallback
 end
 
+local function SafeCoords(coords)
+    if type(coords) == 'vector3' then
+        return coords
+    end
+    if type(coords) == 'table' and coords.x and coords.y and coords.z then
+        return vector3(coords.x, coords.y, coords.z)
+    end
+    return nil
+end
+
 --- Raycast nach unten
 local function RaycastDown(x, y, z, ignoreEntity, flags)
     local ray = StartShapeTestRay(x, y, z + 1.5, x, y, z - 5.0, flags or 17, ignoreEntity or 0, 0)
-    local _, hit, hitCoords, _, hitEntity = GetShapeTestResult(ray)
+    local retval, hit, hitCoords, _, hitEntity = GetShapeTestResult(ray)
+    if retval == 0 then
+        return false
+    end
     return hit == 1, hitEntity, hitCoords
 end
 
@@ -19,11 +35,14 @@ local function RaycastHorizontal(x, y, z, dirX, dirY, distance, ignoreEntity)
     local ray = StartShapeTestRay(
         x, y, z,
         x + dirX * distance, y + dirY * distance, z,
-        1, -- Map / Weltgeometrie
+        1,
         ignoreEntity or 0,
         0
     )
-    local _, hit, hitCoords = GetShapeTestResult(ray)
+    local retval, hit, hitCoords = GetShapeTestResult(ray)
+    if retval == 0 then
+        return false
+    end
     return hit == 1, hitCoords
 end
 
@@ -35,7 +54,12 @@ local function IsOverlappingProps(entity, coords, minDim, maxDim)
     local myBottom = coords.z + minDim.z
     local myTop = coords.z + maxDim.z
 
-    for _, obj in ipairs(GetGamePool('CObject')) do
+    local pool = GetGamePool('CObject')
+    if not pool then
+        return false
+    end
+
+    for _, obj in ipairs(pool) do
         if obj ~= entity and DoesEntityExist(obj) then
             local objCoords = GetEntityCoords(obj)
             local dx = math.abs(coords.x - objCoords.x)
@@ -58,7 +82,11 @@ end
 
 --- Prüft ob das Objekt auf einem anderen Prop stehen würde
 local function IsStackedOnProp(entity, coords, minDim, maxDim)
-    local hit, hitEntity, hitCoords = RaycastDown(coords.x, coords.y, coords.z + maxDim.z - minDim.z + 0.5, entity, 16)
+    local hit, hitEntity, hitCoords = RaycastDown(
+        coords.x, coords.y, coords.z + (maxDim.z - minDim.z) + 0.5,
+        entity,
+        16
+    )
 
     if hit and hitEntity and hitEntity ~= 0 and hitEntity ~= entity and GetEntityType(hitEntity) == 3 then
         local groundZ = Utils.GetGroundZ(coords.x, coords.y, coords.z)
@@ -103,16 +131,9 @@ local function IsTooCloseToWall(entity, coords, heading, minDim, maxDim)
         end
     end
 
-    if closeHits >= 2 then
-        return true
-    end
-
-    return false
+    return closeHits >= 2
 end
 
---- Hauptprüfung für Platzierung / Ablegen
---- @return boolean ok
---- @return string|nil reason locale key
 function Validation.CanPlace(entity, coords, heading)
     if not GetCfg('validatePlacement', true) then
         return true
@@ -122,21 +143,30 @@ function Validation.CanPlace(entity, coords, heading)
         return false, 'placement_invalid'
     end
 
-    if not coords then
+    local safeCoords = SafeCoords(coords)
+    if not safeCoords then
         return false, 'placement_invalid'
     end
 
-    local minDim, maxDim = GetModelDimensions(GetEntityModel(entity))
+    local model = GetEntityModel(entity)
+    if not model or model == 0 then
+        return false, 'placement_invalid'
+    end
 
-    if IsOverlappingProps(entity, coords, minDim, maxDim) then
+    local minDim, maxDim = GetModelDimensions(model)
+    if not minDim or not maxDim then
+        return true
+    end
+
+    if IsOverlappingProps(entity, safeCoords, minDim, maxDim) then
         return false, 'placement_blocked_prop'
     end
 
-    if IsStackedOnProp(entity, coords, minDim, maxDim) then
+    if IsStackedOnProp(entity, safeCoords, minDim, maxDim) then
         return false, 'placement_blocked_prop'
     end
 
-    if IsTooCloseToWall(entity, coords, heading, minDim, maxDim) then
+    if IsTooCloseToWall(entity, safeCoords, heading, minDim, maxDim) then
         return false, 'placement_blocked_wall'
     end
 
@@ -144,12 +174,28 @@ function Validation.CanPlace(entity, coords, heading)
 end
 
 function Validation.NotifyBlocked(reason)
-    Notify.LocaleType(reason or 'placement_invalid', 'error')
+    local now = GetGameTimer()
+    if now - lastNotifyAt < NOTIFY_COOLDOWN then
+        return
+    end
+    lastNotifyAt = now
+
+    if Notify and Notify.LocaleType then
+        Notify.LocaleType(reason or 'placement_invalid', 'error')
+    end
 end
 
 function Validation.TryPlace(entity, coords, heading)
-    local ok, reason = Validation.CanPlace(entity, coords, heading)
+    local ok, canPlace, reason = pcall(function()
+        return Validation.CanPlace(entity, coords, heading)
+    end)
+
     if not ok then
+        Utils.Debug('Validation.TryPlace Fehler:', canPlace)
+        return true
+    end
+
+    if not canPlace then
         Validation.NotifyBlocked(reason)
         return false
     end

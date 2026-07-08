@@ -114,9 +114,17 @@ function Utils.GetModeForCategory(categoryId)
     return 'carry'
 end
 
---- Attach-Offset für Kategorie
-function Utils.GetAttachOffset(categoryId)
-    return Config.AttachOffsets[categoryId] or Config.AttachOffsets.box
+--- Attach-Offset für Kategorie / Model
+function Utils.GetAttachOffset(categoryId, modelHash)
+    if modelHash and Config.ModelAttachOverrides then
+        for modelName, offset in pairs(Config.ModelAttachOverrides) do
+            if Utils.GetModelHash(modelName) == modelHash then
+                return offset
+            end
+        end
+    end
+
+    return Config.AttachOffsets[categoryId] or Config.AttachOffsets.box or Config.AttachOffsets.default
 end
 
 --- Bodenhöhe sicher ermitteln

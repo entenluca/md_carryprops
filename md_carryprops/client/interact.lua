@@ -1,10 +1,28 @@
 Interact = {}
 
--- Target-Stub: muss vor main.lua verfügbar sein (auch wenn target.lua fehlt oder später lädt)
+-- Stubs: müssen vor carry.lua / main.lua verfügbar sein
 Target = Target or {
     system = nil,
     registered = false,
 }
+
+Validation = Validation or {}
+
+if not Validation.TryPlace then
+    function Validation.CanPlace()
+        return true
+    end
+
+    function Validation.TryPlace()
+        return true
+    end
+
+    function Validation.NotifyBlocked(reason)
+        if Notify and Notify.LocaleType then
+            Notify.LocaleType(reason or 'placement_invalid', 'error')
+        end
+    end
+end
 
 function Target.IsEnabled()
     local mode = Config.Interaction and Config.Interaction.mode or 'target'

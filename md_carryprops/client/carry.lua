@@ -15,6 +15,31 @@ function Carry.GetEntity()
     return Carry.entity
 end
 
+local function GetCarryAnimation(category)
+    if category == 'construction' then
+        return Config.Animations.carryOneHand or Config.Animations.carry
+    end
+    return Config.Animations.carry
+end
+
+function Carry.ApplyAttach(entity, ped, category)
+    if not DoesEntityExist(entity) or not DoesEntityExist(ped) then
+        return
+    end
+
+    local model = GetEntityModel(entity)
+    local offset = Utils.GetAttachOffset(category, model)
+
+    DetachEntity(entity, true, true)
+
+    AttachEntityToEntity(
+        entity, ped, GetPedBoneIndex(ped, offset.bone),
+        offset.x, offset.y, offset.z,
+        offset.rx, offset.ry, offset.rz,
+        true, true, false, true, 1, true
+    )
+end
+
 function Carry.Start(entity, category, mode)
     local ped = PlayerPedId()
     local canInteract, reason = Utils.CanPlayerInteract(ped)
@@ -50,21 +75,17 @@ function Carry.Start(entity, category, mode)
         return false
     end
 
-    local offset = Utils.GetAttachOffset(category)
-    local anim = Config.Animations.carry
-
-    Utils.PlayAnim(ped, anim.dict, anim.anim, anim.flag)
+    local anim = GetCarryAnimation(category)
 
     DetachEntity(entity, true, true)
     FreezeEntityPosition(entity, true)
     SetEntityCollision(entity, false, false)
 
-    AttachEntityToEntity(
-        entity, ped, GetPedBoneIndex(ped, offset.bone),
-        offset.x, offset.y, offset.z,
-        offset.rx, offset.ry, offset.rz,
-        true, true, false, true, 1, true
-    )
+    Utils.PlayAnim(ped, anim.dict, anim.anim, anim.flag)
+
+    -- Kurz warten bis Animation läuft, dann sauber attachieren
+    Wait(100)
+    Carry.ApplyAttach(entity, ped, category)
 
     Carry.active = true
     Carry.entity = entity
@@ -119,7 +140,7 @@ function Carry.Drop()
     local heading = GetEntityHeading(ped)
     local coords = GetOffsetFromEntityInWorldCoords(ped, 0.0, 0.9, 0.0)
 
-    if not Validation.TryPlace(entity, coords, heading) then
+    if Validation and Validation.TryPlace and not Validation.TryPlace(entity, coords, heading) then
         return
     end
 
@@ -188,9 +209,14 @@ CreateThread(function()
     while true do
         if Carry.IsActive() then
             local ped = PlayerPedId()
+            local entity = Carry.entity
+
             if not IsEntityPlayingAnim(ped, Carry.animDict, Carry.animName, 3) then
                 Utils.PlayAnim(ped, Carry.animDict, Carry.animName, Config.Animations.carry.flag)
+                Wait(50)
+                Carry.ApplyAttach(entity, ped, Carry.category)
             end
+
             Wait(500)
         else
             Wait(1000)

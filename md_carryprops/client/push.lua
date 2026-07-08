@@ -97,7 +97,7 @@ function Push.Drop()
     local heading = GetEntityHeading(entity)
     local coords = GetEntityCoords(entity)
 
-    if not Validation.TryPlace(entity, coords, heading) then
+    if Validation and Validation.TryPlace and not Validation.TryPlace(entity, coords, heading) then
         return
     end
 

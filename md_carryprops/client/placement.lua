@@ -112,7 +112,7 @@ function Placement.Confirm()
     local coords = GetEntityCoords(entity)
     local heading = Placement.rotation
 
-    if not Validation.TryPlace(entity, coords, heading) then
+    if Validation and Validation.TryPlace and not Validation.TryPlace(entity, coords, heading) then
         return
     end
 
@@ -228,8 +228,8 @@ function Placement.HandleInput()
     if IsDisabledControlJustPressed(0, Config.Keys.place) then
         if Placement.canPlace then
             Placement.Confirm()
-        else
-            Validation.NotifyBlocked('placement_invalid')
+        elseif Validation and Validation.NotifyBlocked then
+            Validation.NotifyBlocked(Placement.blockReason or 'placement_invalid')
         end
     elseif IsDisabledControlJustPressed(0, Config.Keys.cancel)
         or IsDisabledControlJustPressed(0, Config.Keys.cancelAlt) then

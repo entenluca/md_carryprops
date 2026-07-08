@@ -213,7 +213,12 @@ Config.Animations = {
     carry = {
         dict = 'anim@heists@box_carry@',
         anim = 'idle',
-        flag = 49, -- Upper body only, loop
+        flag = 49, -- Oberkörper, Spieler kann laufen
+    },
+    carryOneHand = {
+        dict = 'anim@move_m@trash',
+        anim = 'idle',
+        flag = 49,
     },
     push = {
         dict = 'anim@heists@box_carry@',
@@ -223,14 +228,33 @@ Config.Animations = {
 }
 
 -- =============================================================================
--- ATTACH-OFFSETS pro Kategorie (bone 57005 = SKEL_R_Hand)
+-- ATTACH-OFFSETS
+-- Bones: 28422 = IK_R_Hand, 60309 = PH_R_Hand, 24818 = SKEL_Spine3
 -- =============================================================================
 
 Config.AttachOffsets = {
-    trash = { bone = 57005, x = 0.0, y = -0.45, z = -0.05, rx = 0.0, ry = 0.0, rz = 0.0 },
-    cart = { bone = 57005, x = 0.0, y = -0.45, z = -0.05, rx = 0.0, ry = 0.0, rz = 0.0 },
-    box = { bone = 57005, x = 0.15, y = 0.0, z = -0.05, rx = 280.0, ry = 0.0, rz = 0.0 },
-    construction = { bone = 57005, x = 0.1, y = 0.0, z = -0.1, rx = 280.0, ry = 0.0, rz = 0.0 },
+    default = { bone = 28422, x = 0.0, y = -0.12, z = 0.02, rx = 0.0, ry = 0.0, rz = 0.0 },
+
+    -- Kisten: vor dem Körper, passend zur box_carry-Animation
+    box = { bone = 60309, x = 0.025, y = 0.08, z = 0.255, rx = -145.0, ry = 290.0, rz = 0.0 },
+
+    -- Baustelle: einhändig seitlich (Kegel, Schilder)
+    construction = { bone = 28422, x = 0.08, y = -0.05, z = 0.02, rx = -80.0, ry = 10.0, rz = 90.0 },
+
+    -- Falls doch getragen wird
+    trash = { bone = 24818, x = 0.0, y = 0.28, z = -0.05, rx = 0.0, ry = 0.0, rz = 0.0 },
+    cart = { bone = 24818, x = 0.0, y = 0.28, z = -0.05, rx = 0.0, ry = 0.0, rz = 0.0 },
+}
+
+-- Feinabstimmung pro Model (optional)
+Config.ModelAttachOverrides = {
+    ['prop_cs_cardbox_01'] = { bone = 60309, x = 0.025, y = 0.08, z = 0.20, rx = -145.0, ry = 290.0, rz = 0.0 },
+    ['prop_cs_cardbox_02'] = { bone = 60309, x = 0.025, y = 0.08, z = 0.20, rx = -145.0, ry = 290.0, rz = 0.0 },
+    ['prop_roadcone02a'] = { bone = 28422, x = 0.10, y = -0.02, z = 0.0, rx = -90.0, ry = 0.0, rz = 90.0 },
+    ['prop_roadcone02b'] = { bone = 28422, x = 0.10, y = -0.02, z = 0.0, rx = -90.0, ry = 0.0, rz = 90.0 },
+    ['prop_barrier_work05'] = { bone = 24818, x = 0.0, y = 0.35, z = 0.0, rx = 0.0, ry = 0.0, rz = 90.0 },
+    ['prop_sign_road_01a'] = { bone = 28422, x = 0.12, y = 0.0, z = 0.0, rx = 0.0, ry = 0.0, rz = 90.0 },
+    ['prop_worklight_03a'] = { bone = 28422, x = 0.05, y = -0.08, z = 0.0, rx = -70.0, ry = 0.0, rz = 90.0 },
 }
 
 -- Schiebe-Offset vor dem Spieler (relativ zum Ped)
