@@ -8,7 +8,26 @@ local State = {
     targetMode = nil,
 }
 
---- Grünes Hand-Symbol in der Bildschirmmitte
+local function UsesRaycastInteraction()
+    local mode = Config.Interaction.mode or 'target'
+
+    if mode == 'raycast' then
+        return true
+    end
+
+    if mode == 'both' then
+        return true
+    end
+
+    -- target-Modus: Raycast nur als Fallback wenn kein Target-System läuft
+    if mode == 'target' and not Target.IsActive() then
+        return true
+    end
+
+    return false
+end
+
+--- Grünes Hand-Symbol in der Bildschirmmitte (nur Raycast-Modus)
 local function DrawHandIcon()
     if not Config.HandIcon.enabled then
         return
@@ -24,7 +43,6 @@ local function DrawHandIcon()
     AddTextComponentSubstringPlayerName(cfg.text)
     EndTextCommandDisplayText(0.5, 0.48 + cfg.offsetY)
 
-    -- Kleiner Hinweis unter dem Symbol
     SetTextFont(4)
     SetTextScale(0.32, 0.32)
     SetTextColour(200, 255, 200, 180)
@@ -43,15 +61,11 @@ local function FindTargetProp()
         return nil
     end
 
-    if GetEntityType(entity) ~= 3 then -- Object
+    if not Interact.CanPickupEntity(entity) then
         return nil
     end
 
     local model = GetEntityModel(entity)
-    if not Utils.IsPropAllowed(model) then
-        return nil
-    end
-
     local category = Utils.GetCategoryForModel(model)
     local mode = Utils.GetModeForCategory(category)
 
@@ -68,13 +82,11 @@ local function HandleActiveInput()
         return
     end
 
-    -- G = Placement-Modus
     if IsControlJustPressed(0, Config.Keys.placementMode) then
         Placement.Enter()
         return
     end
 
-    -- X = Sicher ablegen
     if IsControlJustPressed(0, Config.Keys.drop) then
         if Carry.IsActive() then
             Carry.Drop()
@@ -84,7 +96,6 @@ local function HandleActiveInput()
         return
     end
 
-    -- Hinweise anzeigen
     local y = 0.88
     local hints = {
         '[G] ' .. Config.L('place_mode'),
@@ -103,7 +114,7 @@ local function HandleActiveInput()
     end
 end
 
---- Aufnahme-Taste
+--- Aufnahme per E-Taste (Raycast-Fallback)
 local function HandlePickupInput()
     if Carry.IsActive() or Push.IsActive() or Placement.IsActive() then
         return
@@ -116,22 +127,7 @@ local function HandlePickupInput()
     DrawHandIcon()
 
     if IsControlJustPressed(0, Config.Keys.pickup) then
-        local ped = PlayerPedId()
-        local canInteract, reason = Utils.CanPlayerInteract(ped)
-        if not canInteract then
-            Notify.LocaleType(reason, 'error')
-            return
-        end
-
-        local entity = State.targetEntity
-        local category = State.targetCategory
-        local mode = State.targetMode
-
-        if mode == 'push' then
-            Push.Start(entity, category)
-        else
-            Carry.Start(entity, category, mode)
-        end
+        Interact.Pickup(State.targetEntity)
     end
 end
 
@@ -145,7 +141,7 @@ CreateThread(function()
         elseif Carry.IsActive() or Push.IsActive() then
             HandleActiveInput()
             sleep = Config.ActiveWait
-        else
+        elseif UsesRaycastInteraction() then
             local ped = PlayerPedId()
             local canInteract = Utils.CanPlayerInteract(ped)
 
@@ -164,6 +160,10 @@ CreateThread(function()
                 State.targetCategory = nil
                 State.targetMode = nil
             end
+        else
+            State.targetEntity = nil
+            State.targetCategory = nil
+            State.targetMode = nil
         end
 
         Wait(sleep)
@@ -185,7 +185,6 @@ AddEventHandler('onResourceStop', function(resource)
     end
 end)
 
---- Server-Event: Prop spawnen (optional über Server)
 RegisterNetEvent('md_carryprops:client:spawnProp', function(model, category)
     Carry.SpawnAndHold(model, category)
 end)

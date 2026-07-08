@@ -19,6 +19,8 @@ client_scripts {
     'client/push.lua',
     'client/carry.lua',
     'client/placement.lua',
+    'client/interact.lua',
+    'client/target.lua',
     'client/menu.lua',
     'client/main.lua',
 }

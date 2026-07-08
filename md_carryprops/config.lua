@@ -64,6 +64,23 @@ Config.Locales = {
 }
 
 -- =============================================================================
+-- INTERAKTION (Alt-Auge / Target)
+-- =============================================================================
+
+Config.Interaction = {
+    -- 'target' = ox_target / qb-target (Alt-Auge)
+    -- 'raycast' = klassisch mit E-Taste und Hand-Symbol
+    -- 'both' = beides gleichzeitig
+    mode = 'target',
+
+  -- 'auto' erkennt ox_target oder qb-target automatisch
+    targetSystem = 'auto', -- 'auto' | 'ox_target' | 'qb-target'
+    targetDistance = 2.5,
+    targetIcon = 'fa-solid fa-hand',
+    targetLabel = nil, -- nil = Config.L('pickup')
+}
+
+-- =============================================================================
 -- TASTEN (FiveM Control-IDs)
 -- https://docs.fivem.net/docs/game-references/controls/
 -- =============================================================================
@@ -237,7 +254,7 @@ Config.PropMenu = {
 -- =============================================================================
 
 Config.HandIcon = {
-    enabled = true,
+    enabled = false, -- Bei target-Modus nicht nötig (ox_target zeigt Alt-Auge)
     text = '✋',           -- Angezeigtes Symbol
     color = { r = 80, g = 220, b = 100, a = 220 },
     scale = 0.65,

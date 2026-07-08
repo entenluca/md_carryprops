@@ -26,6 +26,32 @@ function Utils.GetModelName(model)
     return nil
 end
 
+--- Alle Model-Hashes für Target-Registrierung sammeln
+function Utils.GetTargetModels()
+    local models = {}
+    local seen = {}
+
+    local function add(entry)
+        local hash = Utils.GetModelHash(entry)
+        if hash and not seen[hash] then
+            seen[hash] = true
+            models[#models + 1] = hash
+        end
+    end
+
+    for _, entry in ipairs(Config.AllowedProps or {}) do
+        add(entry)
+    end
+
+    for _, entry in ipairs(Config.MenuProps or {}) do
+        if entry.model then
+            add(entry.model)
+        end
+    end
+
+    return models
+end
+
 --- Prüft ob ein Model in der Whitelist ist
 function Utils.IsPropAllowed(modelHash)
     if not Config.UseWhitelist then
