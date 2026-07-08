@@ -4,6 +4,8 @@ Placement = {
     category = nil,
     rotation = 0.0,
     fromPush = false,
+    canPlace = true,
+    blockReason = nil,
 }
 
 function Placement.IsActive()
@@ -110,6 +112,10 @@ function Placement.Confirm()
     local coords = GetEntityCoords(entity)
     local heading = Placement.rotation
 
+    if not Validation.TryPlace(entity, coords, heading) then
+        return
+    end
+
     ResetEntityAlpha(entity)
     Utils.SafePlaceEntity(entity, coords, heading)
 
@@ -118,6 +124,7 @@ function Placement.Confirm()
     Placement.category = nil
     Placement.rotation = 0.0
     Placement.fromPush = false
+    Placement.canPlace = true
 
     Notify.LocaleType('placed', 'success')
 end
@@ -163,6 +170,17 @@ function Placement.Update()
     SetEntityCoords(entity, newX, newY, newZ, false, false, false, false)
     SetEntityHeading(entity, Placement.rotation)
 
+    local ok, reason = Validation.CanPlace(entity, vector3(newX, newY, newZ), Placement.rotation)
+    Placement.canPlace = ok
+    Placement.blockReason = reason
+
+    -- Visuelles Feedback: grün = ok, rot = blockiert
+    if ok then
+        SetEntityAlpha(entity, 200, false)
+    else
+        SetEntityAlpha(entity, 140, false)
+    end
+
     -- Mausrad-Rotation
     if IsControlJustPressed(0, Config.Keys.scrollUp) or IsDisabledControlJustPressed(0, Config.Keys.scrollUp) then
         Placement.rotation = Placement.rotation + Config.RotationSpeed
@@ -175,11 +193,16 @@ function Placement.Update()
 end
 
 function Placement.DrawHints()
-    local hints = {
-        '~g~' .. Config.L('place') .. '~w~ [LMB]',
-        '~r~' .. Config.L('cancel') .. '~w~ [RMB/Bksp]',
-        '~y~' .. Config.L('rotate') .. '~w~ [Scroll]',
-    }
+    local hints = {}
+
+    if Placement.canPlace then
+        hints[#hints + 1] = '~g~' .. Config.L('place') .. '~w~ [LMB]'
+    else
+        hints[#hints + 1] = '~r~' .. Config.L('placement_invalid') .. '~w~'
+    end
+
+    hints[#hints + 1] = '~r~' .. Config.L('cancel') .. '~w~ [RMB/Bksp]'
+    hints[#hints + 1] = '~y~' .. Config.L('rotate') .. '~w~ [Scroll]'
 
     for i, text in ipairs(hints) do
         SetTextFont(4)
@@ -203,7 +226,11 @@ function Placement.HandleInput()
     DisableControlAction(0, Config.Keys.cancelAlt, true)
 
     if IsDisabledControlJustPressed(0, Config.Keys.place) then
-        Placement.Confirm()
+        if Placement.canPlace then
+            Placement.Confirm()
+        else
+            Validation.NotifyBlocked('placement_invalid')
+        end
     elseif IsDisabledControlJustPressed(0, Config.Keys.cancel)
         or IsDisabledControlJustPressed(0, Config.Keys.cancelAlt) then
         Placement.Exit(true)

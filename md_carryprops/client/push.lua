@@ -97,6 +97,10 @@ function Push.Drop()
     local heading = GetEntityHeading(entity)
     local coords = GetEntityCoords(entity)
 
+    if not Validation.TryPlace(entity, coords, heading) then
+        return
+    end
+
     Utils.SafePlaceEntity(entity, coords, heading)
     Utils.StopAnim(PlayerPedId(), Push.animDict, Push.animName)
 

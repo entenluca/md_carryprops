@@ -34,6 +34,9 @@ Config.Locales = {
         menu_close = 'Schließen',
         pushing = 'Objekt wird geschoben',
         carrying = 'Objekt wird getragen',
+        placement_blocked_prop = 'Hier steht bereits ein Objekt.',
+        placement_blocked_wall = 'Du kannst das nicht in die Wand stellen.',
+        placement_invalid = 'Ungültige Position.',
     },
     en = {
         pickup = 'Pick up prop',
@@ -60,6 +63,9 @@ Config.Locales = {
         menu_close = 'Close',
         pushing = 'Pushing object',
         carrying = 'Carrying object',
+        placement_blocked_prop = 'There is already an object here.',
+        placement_blocked_wall = 'You cannot place that into a wall.',
+        placement_invalid = 'Invalid position.',
     },
 }
 
@@ -247,6 +253,19 @@ Config.PropMenu = {
     },
     -- Bevorzugtes Menü: 'auto' erkennt automatisch ox_lib > qb-menu > esx
     menuType = 'auto',
+}
+
+-- =============================================================================
+-- EINSCHRÄNKUNGEN
+-- =============================================================================
+
+Config.Restrictions = {
+    disableSprint = true,           -- Kein Rennen beim Tragen/Schieben
+    disableJump = true,             -- Kein Springen
+    walkSpeedMultiplier = 0.9,      -- Etwas langsamer laufen (1.0 = normal)
+    validatePlacement = true,       -- Platzierung auf Props / in Wände blockieren
+    placementOverlapPadding = 0.2,  -- Abstand zu anderen Props (Meter)
+    wallCheckDistance = 0.35,       -- Mindestabstand zu Wänden (Meter)
 }
 
 -- =============================================================================

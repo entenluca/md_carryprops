@@ -119,6 +119,10 @@ function Carry.Drop()
     local heading = GetEntityHeading(ped)
     local coords = GetOffsetFromEntityInWorldCoords(ped, 0.0, 0.9, 0.0)
 
+    if not Validation.TryPlace(entity, coords, heading) then
+        return
+    end
+
     DetachEntity(entity, true, true)
     Utils.SafePlaceEntity(entity, coords, heading)
     Utils.StopAnim(ped, Carry.animDict, Carry.animName)
